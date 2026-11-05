@@ -1346,7 +1346,7 @@ load();initCloud();setInterval(()=>{renderHome();renderVideos();renderArtists();
   const v=String(value||'').trim(),parts=v.split(':');
   if(parts.length===2&&parts[0]==='movie'){document.querySelector('[data-cloud-movie-id="'+CSS.escape(parts[1])+'"]')?.click();return}
   if(parts.length===2&&parts[0]==='series'){document.querySelector('[data-cloud-series-id="'+CSS.escape(parts[1])+'"]')?.click();return}
-  const target={home:'homeScreen',tracks:'tracksScreen',music_videos:'videosScreen',movies:'moviesScreen',series:'seriesLibraryScreen',profile:'accountScreen'}[v];
+  const target={home:'homeScreen',tracks:'tracksScreen',music_videos:'videosScreen',movies:'moviesScreen',series:'seriesLibraryScreen',seriesLibrary:'seriesLibraryScreen',musicVideos:'videosScreen',account:'accountScreen',profile:'accountScreen'}[v];
   if(target){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(target)?.classList.add('active');window.scrollTo({top:0,behavior:'instant'});}
  }
  function render(row){
