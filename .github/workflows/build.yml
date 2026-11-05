@@ -8,6 +8,7 @@ on:
       - 'music-app-android-project-v17-cloud-build.zip'
       - 'nova-app-latest.html'
       - 'nova-series-and-ads.js'
+      - 'nova-launcher-icon.xml'
       - '.github/workflows/build.yml'
 
 jobs:
@@ -23,6 +24,24 @@ jobs:
           test -f extracted/music-app-android-project/app/src/main/assets/index.html
           cp nova-app-latest.html extracted/music-app-android-project/app/src/main/assets/index.html
           cp nova-series-and-ads.js extracted/music-app-android-project/app/src/main/assets/nova-series-and-ads.js
+          mkdir -p extracted/music-app-android-project/app/src/main/res/drawable
+          cp nova-launcher-icon.xml extracted/music-app-android-project/app/src/main/res/drawable/ic_launcher.xml
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          manifest = Path('extracted/music-app-android-project/app/src/main/AndroidManifest.xml')
+          if not manifest.exists():
+              raise SystemExit('AndroidManifest.xml not found')
+          tree = ET.parse(manifest)
+          app = tree.getroot().find('application')
+          if app is None:
+              raise SystemExit('application tag not found in AndroidManifest.xml')
+          ns = '{http://schemas.android.com/apk/res/android}'
+          app.set(ns + 'label', 'NOVA MEDIA')
+          app.set(ns + 'icon', '@drawable/ic_launcher')
+          app.set(ns + 'roundIcon', '@drawable/ic_launcher')
+          tree.write(manifest, encoding='utf-8', xml_declaration=True)
+          PY
           test -s extracted/music-app-android-project/app/src/main/assets/index.html
 
       - name: Validate JavaScript sources
@@ -31,9 +50,9 @@ jobs:
           python3 - <<'PY'
           import re, pathlib, subprocess
           source = pathlib.Path('nova-app-latest.html').read_text(encoding='utf-8')
-          for index, match in enumerate(re.finditer(r'<script\\b([^>]*)>([\\s\\S]*?)</script\\s*>', source, re.I)):
+          for index, match in enumerate(re.finditer(r'<script([^>]*)>(.*?)</script *>', source, re.I | re.S)):
               attrs, code = match.group(1), match.group(2)
-              if not code.strip() or re.search(r'\\bsrc\\s*=', attrs, re.I) or 'application/json' in attrs:
+              if not code.strip() or 'src=' in attrs or 'application/json' in attrs:
                   continue
               path = pathlib.Path(f'/tmp/nova-inline-{index}.js')
               path.write_text(code, encoding='utf-8')
