@@ -1342,11 +1342,20 @@ load();initCloud();setInterval(()=>{renderHome();renderVideos();renderArtists();
  const BASE='https://dzrlguwrqabtfnhfpgjo.supabase.co',KEY='sb_publishable_mdWZIvIh_7QMQugjX6TDvA_eqsqZGnP';
  const ids={home:'adSlotHome',tracks:'adSlotTrack',music_videos:'adSlotVideos',movies:'adSlotMovies',series:'adSlotSeries',profile:'adSlotProfile'};
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- function goInternal(value){
+ async function goInternal(value){
   const v=String(value||'').trim(),parts=v.split(':');
   if(parts.length===2&&parts[0]==='movie'){document.querySelector('[data-cloud-movie-id="'+CSS.escape(parts[1])+'"]')?.click();return}
   if(parts.length===2&&parts[0]==='series'){document.querySelector('[data-cloud-series-id="'+CSS.escape(parts[1])+'"]')?.click();return}
-  const target={home:'homeScreen',tracks:'tracksScreen',music_videos:'videosScreen',movies:'moviesScreen',series:'seriesLibraryScreen',seriesLibrary:'seriesLibraryScreen',musicVideos:'videosScreen',account:'accountScreen',profile:'accountScreen'}[v];
+  if(parts.length===2&&(parts[0]==='track'||parts[0]==='music_video')){
+   const id=parts[0]==='track'?'cloud-track-'+parts[1]:'cloud-video-'+parts[1];
+   const page=parts[0]==='track'?'tracksScreen':'videosScreen';
+   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(page)?.classList.add('active');
+   setTimeout(()=>document.querySelector('[data-open="'+CSS.escape(id)+'"]')?.click(),80);window.scrollTo({top:0,behavior:'instant'});return;
+  }
+  if(parts.length===2&&parts[0]==='episode'){
+   try{const r=await fetch(BASE+'/rest/v1/episodes?select=id,season_id,seasons(series_id)&id=eq.'+encodeURIComponent(parts[1]),{headers:{apikey:KEY,Accept:'application/json'}});const rows=await r.json();const sid=rows?.[0]?.seasons?.series_id;if(sid){document.querySelector('[data-cloud-series-id="'+CSS.escape(String(sid))+'"]')?.click();return}}catch(e){}
+  }
+  const target={home:'homeScreen',tracks:'tracksScreen',music_videos:'videosScreen',videos:'videosScreen',movies:'moviesScreen',series:'seriesLibraryScreen',seriesLibrary:'seriesLibraryScreen',profile:'accountScreen',account:'accountScreen'}[v];
   if(target){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(target)?.classList.add('active');window.scrollTo({top:0,behavior:'instant'});}
  }
  function render(row){
@@ -1394,142 +1403,4 @@ document.addEventListener('click',function(e){
 },true);
 </script>
 
-
-<!-- NOVA CLOUD SERIES + SIMPLE AD SLOTS INTEGRATION -->
-<script>
-(()=> {
- const API='https://dzrlguwrqabtfnhfpgjo.supabase.co/rest/v1/';
- const KEY='sb_publishable_mdWZIvIh_7QMQugjX6TDvA_eqsqZGnP';
- const headers={apikey:KEY,Accept:'application/json'};
- const escH=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const get=async(path)=>{const r=await fetch(API+path,{headers});if(!r.ok)throw Error('دریافت '+path.split('?')[0]+' ناموفق بود ('+r.status+')');return r.json()};
- let seriesRows=[],seasonRows=[],episodeRows=[],qualityRows=[],activeSeries=null;
- const seriesRoot=()=>document.querySelector('#seriesLibraryScreen .cinema-grid');
- function poster(url,alt){return url?'<img loading="lazy" src="'+escH(url)+'" alt="'+escH(alt)+'" style="width:100%;height:100%;object-fit:cover">':'<span class="poster-symbol">📺</span>'}
- function renderSeries(){
-   const grid=seriesRoot();if(!grid)return;
-   const list=seriesRows.filter(x=>x.is_published);
-   grid.innerHTML=list.length?list.map(s=>{
-    const seasons=seasonRows.filter(z=>String(z.series_id)===String(s.id)&&z.is_published!==false);
-    const count=seasons.reduce((n,z)=>n+episodeRows.filter(e=>String(e.season_id)===String(z.id)&&e.is_published!==false).length,0);
-    return '<button class="cinema-card" type="button" data-cloud-series="'+escH(s.id)+'"><div class="cinema-poster">'+poster(s.poster_url,s.title)+'<span class="poster-bottom"><b>'+escH(s.title)+'</b><small>'+escH(s.release_year||'')+' · '+seasons.length+' فصل · '+count+' قسمت</small></span></div><div class="cinema-meta"><span>'+seasons.length+' فصل</span><span>'+count+' قسمت</span></div><p>'+escH(s.description||'')+'</p><span class="cinema-open">مشاهده فصل‌ها و قسمت‌ها ←</span></button>'
-   }).join(''):'<div class="notice">هنوز سریال منتشرشده‌ای ثبت نشده است.</div>';
-   grid.querySelectorAll('[data-cloud-series]').forEach(b=>b.addEventListener('click',()=>openSeries(b.dataset.cloudSeries)));
- }
- function openSeries(id){
-   activeSeries=seriesRows.find(x=>String(x.id)===String(id));if(!activeSeries)return;
-   const root=document.querySelector('#seriesScreen .panel');if(!root)return;
-   const seasons=seasonRows.filter(z=>String(z.series_id)===String(id)&&z.is_published!==false).sort((a,b)=>(a.season_number||0)-(b.season_number||0));
-   root.innerHTML='<div class="row" style="align-items:start"><div class="art" style="overflow:hidden">'+poster(activeSeries.poster_url,activeSeries.title)+'</div><div style="flex:1;min-width:0"><h2>'+escH(activeSeries.title)+'</h2><div class="muted">'+escH(activeSeries.release_year||'')+' · '+seasons.length+' فصل</div><p class="muted">'+escH(activeSeries.description||'')+'</p></div></div><label class="field">انتخاب فصل<select id="cloudSeasonSelect">'+seasons.map(z=>'<option value="'+escH(z.id)+'">فصل '+escH(z.season_number||'')+(z.title?' — '+escH(z.title):'')+'</option>').join('')+'</select></label><h3>قسمت‌ها</h3><div id="cloudEpisodeList"></div>';
-   const sel=document.getElementById('cloudSeasonSelect');const renderEpisodes=()=>{
-    const host=document.getElementById('cloudEpisodeList');if(!host)return;
-    const eps=episodeRows.filter(e=>String(e.season_id)===String(sel?.value)&&e.is_published!==false).sort((a,b)=>(a.episode_number||0)-(b.episode_number||0));
-    host.innerHTML=eps.length?eps.map(e=>{
-      const qs=qualityRows.filter(q=>String(q.episode_id)===String(e.id)&&q.is_enabled!==false).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-      return '<article class="item"><div class="thumb" style="overflow:hidden">'+(e.thumbnail_url?'<img src="'+escH(e.thumbnail_url)+'" style="width:100%;height:100%;object-fit:cover">':'▶')+'</div><div class="iteminfo"><strong>قسمت '+escH(e.episode_number||'')+' — '+escH(e.title||'')+'</strong><span>'+escH(e.duration_minutes||'')+' دقیقه · '+qs.length+' کیفیت</span><div class="itembuttons">'+(qs.length?qs.map((q,i)=>'<button class="btn" type="button" data-episode-play="'+escH(q.id)+'">▶ '+escH(q.quality_label||'پخش')+(q.language_label?' · '+escH(q.language_label):'')+'</button>').join(''):'<span class="tiny">کیفیت پخشی ثبت نشده است.</span>')+'</div><div class="itembuttons">'+qs.filter(q=>q.download_url).map(q=>'<a class="small" href="'+escH(q.download_url)+'" target="_blank" rel="noopener">⇩ دانلود '+escH(q.quality_label||'')+'</a>').join('')+'</div></div></article>'
-    }).join(''):'<div class="notice">برای این فصل هنوز قسمت منتشرشده‌ای وجود ندارد.</div>';
-    host.querySelectorAll('[data-episode-play]').forEach(b=>b.addEventListener('click',()=>{
-      const q=qualityRows.find(x=>String(x.id)===String(b.dataset.episodePlay));if(!q?.video_url)return;
-      const e=episodeRows.find(x=>String(x.id)===String(q.episode_id));
-      const item={id:'episode-'+q.id,type:'video',title:(activeSeries.title||'سریال')+' · '+(e?.title||'قسمت'),artist:q.language_label||q.quality_label||'NOVA MEDIA',mediaUrl:q.video_url,coverUrl:e?.thumbnail_url||activeSeries.poster_url||'',lyrics:''};
-      try{openFullPlayer(item)}catch(_){window.open(q.video_url,'_blank','noopener')}
-    }));
-   };
-   if(sel){sel.addEventListener('change',renderEpisodes);if(seasons.length)renderEpisodes();else document.getElementById('cloudEpisodeList').innerHTML='<div class="notice">هنوز فصلی برای این سریال ثبت نشده است.</div>'}
-   if(typeof screen==='function')screen('series');else document.getElementById('seriesScreen').classList.add('active');
- }
- async function loadSeries(){
-  try{
-   const [s,se,e,q]=await Promise.all([
-    get('series?select=id,title,description,poster_url,backdrop_url,category_id,release_year,is_featured,is_published,show_in_slider,show_on_home&is_published=eq.true&order=created_at.desc'),
-    get('seasons?select=id,series_id,season_number,title,is_published&order=season_number.asc'),
-    get('episodes?select=id,season_id,episode_number,title,description,thumbnail_url,duration_minutes,is_published&order=episode_number.asc'),
-    get('episode_qualities?select=id,episode_id,quality_label,video_url,download_url,language_label,sort_order,is_enabled&is_enabled=eq.true&order=sort_order.asc')
-   ]);
-   seriesRows=s||[];seasonRows=se||[];episodeRows=e||[];qualityRows=q||[];renderSeries();
-   const feature=seriesRows.find(x=>x.is_featured)||seriesRows[0];
-   if(feature){const t=document.getElementById('seriesFeatureTitle'),d=document.getElementById('seriesFeatureDesc');if(t)t.textContent=feature.title;if(d)d.textContent=feature.description||'فصل‌ها و قسمت‌های این سریال را تماشا کن.';const art=document.querySelector('#seriesFeatureSlider .art');if(art)art.innerHTML=poster(feature.backdrop_url||feature.poster_url,feature.title);document.querySelectorAll('[data-open-series-detail]').forEach(b=>{b.onclick=()=>openSeries(feature.id)})}
-  }catch(err){const grid=seriesRoot();if(grid)grid.innerHTML='<div class="notice">اتصال سریال‌ها برقرار نشد: '+escH(err.message)+'</div>'}
- }
- async function loadAds(){
-  try{
-   const rows=await get('ad_slots?select=slot_key,title,placement,is_enabled,image_url,target_type,target_url,target_value,start_at,end_at&is_enabled=eq.true');
-   const now=Date.now();
-   rows.filter(x=>(!x.start_at||new Date(x.start_at).getTime()<=now)&&(!x.end_at||new Date(x.end_at).getTime()>=now)).forEach(ad=>{
-    const id={home:'adSlotHome',tracks:'adSlotTracks',music_videos:'adSlotVideos',movies:'adSlotMovies',series:'adSlotSeries',profile:'adSlotProfile'}[ad.placement];
-    const host=id&&document.getElementById(id);if(!host||!ad.image_url)return;
-    host.innerHTML='<a href="#" data-nova-ad="'+escH(ad.slot_key)+'" style="display:block;border-radius:14px;overflow:hidden"><img src="'+escH(ad.image_url)+'" alt="'+escH(ad.title||'تبلیغ')+'" style="width:100%;max-height:150px;object-fit:cover;display:block"></a>';
-    host.querySelector('[data-nova-ad]').addEventListener('click',ev=>{
-      ev.preventDefault();
-      if(ad.target_type==='external'&&ad.target_url){window.open(ad.target_url,'_blank','noopener');return}
-      const v=String(ad.target_value||'home');
-      if(['home','movies','seriesLibrary','videos','account'].includes(v)){if(typeof screen==='function')screen(v);return}
-      if(v==='tracks'||v==='music_videos'){if(typeof screen==='function')screen(v==='tracks'?'home':'musicVideos');return}
-      if(v==='profile'){if(typeof screen==='function')screen('account');return}
-      const [kind,rawId]=v.split(':');const contentId=rawId||'';
-      if(kind==='series'&&contentId){openSeries(contentId);return}
-      if(kind==='movie'&&contentId){const card=[...document.querySelectorAll('[data-cloud-movie-id]')].find(el=>String(el.dataset.cloudMovieId)===contentId);if(card){card.click();return}if(typeof screen==='function')screen('moviesScreen');return}
-      if((kind==='track'||kind==='music_video')&&contentId){const item=items.find(z=>String(z.cloudId)===contentId&&z.type===(kind==='track'?'music':'video'));if(item){openDetail(item);return}}
-      if(kind==='episode'&&contentId){const ep=episodeRows.find(z=>String(z.id)===contentId);const q=qualityRows.find(z=>String(z.episode_id)===contentId&&z.is_enabled!==false&&z.video_url);if(q){openFullPlayer({id:'episode-'+q.id,type:'video',title:ep?.title||'قسمت سریال',artist:q.language_label||q.quality_label||'NOVA MEDIA',mediaUrl:q.video_url,coverUrl:ep?.thumbnail_url||activeSeries?.poster_url||'',lyrics:''});return}}
-    });
-   });
-  }catch(_){}
- }
- document.addEventListener('DOMContentLoaded',()=>{loadSeries();loadAds()});
-})();
-</script>
-
-<style id="nova-video-player-cinematic-v3">
-/* Cinematic video player: distinct from the waveform music player. */
-.full-player.video-mode{
- background:radial-gradient(ellipse at 50% 0%,#39204f 0%,#100d19 42%,#07070d 100%);
- padding-top:max(14px,env(safe-area-inset-top));
-}
-.full-player.video-mode .fp-shade{
- background:linear-gradient(180deg,#080610d9 0%,transparent 22%,transparent 65%,#080610e8 100%);
-}
-.full-player.video-mode .fp-top{width:min(1100px,100%);margin:0 auto 4px}
-.full-player.video-mode .fp-label strong{letter-spacing:.3px}
-.full-player.video-mode .fp-label span{color:#d4b7ff}
-.full-player.video-mode #fpMediaHost{
- width:min(1100px,100%);aspect-ratio:16/9;max-height:62vh;
- margin:clamp(12px,2.5vh,24px) auto 18px;border-radius:20px;
- border:1px solid #b78cff55;
- background:radial-gradient(circle at 50% 50%,#21182f,#020207 70%);
- box-shadow:0 24px 75px #000c,0 0 0 1px #ec489922,0 0 38px #8b5cf622;
-}
-.full-player.video-mode #fpMediaHost video{
- width:100%!important;height:100%!important;max-height:62vh!important;
- object-fit:contain;background:#020207;border-radius:19px;
-}
-.full-player.video-mode .fp-meta{
- width:min(1100px,100%);margin:0 auto 12px;padding:12px 15px;
- border:1px solid #8b5cf633;border-radius:15px;
- background:linear-gradient(110deg,#21172fdd,#14111ddd);
-}
-.full-player.video-mode .fp-meta h2{font-size:clamp(17px,2.4vw,23px)}
-.full-player.video-mode .fp-meta-main button{color:#cbb2f5}
-.full-player.video-mode .fp-wave-wrap{
- width:min(1100px,100%);margin:0 auto;padding:12px 15px;
- border:1px solid #ffffff14;border-radius:14px;background:#15111fd9;
-}
-.full-player.video-mode .fp-wave{display:none!important}
-.full-player.video-mode .fp-progress{height:5px;accent-color:#ec4899}
-.full-player.video-mode .fp-controls{margin:12px auto 8px}
-.full-player.video-mode .fp-controls .fp-play{
- width:52px;height:52px;background:linear-gradient(135deg,#8b5cf6,#ec4899);
- box-shadow:0 8px 28px #a855f655;
-}
-.full-player.video-mode .fp-tool-row,
-.full-player.video-mode .fp-status-line{width:min(1100px,100%);margin-left:auto;margin-right:auto}
-.full-player.video-mode .fp-tool{border-color:#8b5cf644;background:#21172fbb}
-.full-player.video-mode #fpLyricsPanel{display:none!important}
-@media(max-width:700px){
- .full-player.video-mode{padding-left:12px;padding-right:12px}
- .full-player.video-mode #fpMediaHost{width:100%;margin:12px auto 14px;border-radius:14px;max-height:42vh}
- .full-player.video-mode #fpMediaHost video{max-height:42vh!important;border-radius:13px}
- .full-player.video-mode .fp-meta{padding:10px 12px}
- .full-player.video-mode .fp-tool-row{gap:7px;flex-wrap:wrap}
-}
-</style>
 </body></html>
