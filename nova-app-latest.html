@@ -1394,4 +1394,83 @@ document.addEventListener('click',function(e){
 },true);
 </script>
 
+
+<!-- NOVA CLOUD SERIES + SIMPLE AD SLOTS INTEGRATION -->
+<script>
+(()=> {
+ const API='https://dzrlguwrqabtfnhfpgjo.supabase.co/rest/v1/';
+ const KEY='sb_publishable_mdWZIvIh_7QMQugjX6TDvA_eqsqZGnP';
+ const headers={apikey:KEY,Accept:'application/json'};
+ const escH=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const get=async(path)=>{const r=await fetch(API+path,{headers});if(!r.ok)throw Error('دریافت '+path.split('?')[0]+' ناموفق بود ('+r.status+')');return r.json()};
+ let seriesRows=[],seasonRows=[],episodeRows=[],qualityRows=[],activeSeries=null;
+ const seriesRoot=()=>document.querySelector('#seriesLibraryScreen .cinema-grid');
+ function poster(url,alt){return url?'<img loading="lazy" src="'+escH(url)+'" alt="'+escH(alt)+'" style="width:100%;height:100%;object-fit:cover">':'<span class="poster-symbol">📺</span>'}
+ function renderSeries(){
+   const grid=seriesRoot();if(!grid)return;
+   const list=seriesRows.filter(x=>x.is_published);
+   grid.innerHTML=list.length?list.map(s=>{
+    const seasons=seasonRows.filter(z=>String(z.series_id)===String(s.id)&&z.is_published!==false);
+    const count=seasons.reduce((n,z)=>n+episodeRows.filter(e=>String(e.season_id)===String(z.id)&&e.is_published!==false).length,0);
+    return '<button class="cinema-card" type="button" data-cloud-series="'+escH(s.id)+'"><div class="cinema-poster">'+poster(s.poster_url,s.title)+'<span class="poster-bottom"><b>'+escH(s.title)+'</b><small>'+escH(s.release_year||'')+' · '+seasons.length+' فصل · '+count+' قسمت</small></span></div><div class="cinema-meta"><span>'+seasons.length+' فصل</span><span>'+count+' قسمت</span></div><p>'+escH(s.description||'')+'</p><span class="cinema-open">مشاهده فصل‌ها و قسمت‌ها ←</span></button>'
+   }).join(''):'<div class="notice">هنوز سریال منتشرشده‌ای ثبت نشده است.</div>';
+   grid.querySelectorAll('[data-cloud-series]').forEach(b=>b.addEventListener('click',()=>openSeries(b.dataset.cloudSeries)));
+ }
+ function openSeries(id){
+   activeSeries=seriesRows.find(x=>String(x.id)===String(id));if(!activeSeries)return;
+   const root=document.querySelector('#seriesScreen .panel');if(!root)return;
+   const seasons=seasonRows.filter(z=>String(z.series_id)===String(id)&&z.is_published!==false).sort((a,b)=>(a.season_number||0)-(b.season_number||0));
+   root.innerHTML='<div class="row" style="align-items:start"><div class="art" style="overflow:hidden">'+poster(activeSeries.poster_url,activeSeries.title)+'</div><div style="flex:1;min-width:0"><h2>'+escH(activeSeries.title)+'</h2><div class="muted">'+escH(activeSeries.release_year||'')+' · '+seasons.length+' فصل</div><p class="muted">'+escH(activeSeries.description||'')+'</p></div></div><label class="field">انتخاب فصل<select id="cloudSeasonSelect">'+seasons.map(z=>'<option value="'+escH(z.id)+'">فصل '+escH(z.season_number||'')+(z.title?' — '+escH(z.title):'')+'</option>').join('')+'</select></label><h3>قسمت‌ها</h3><div id="cloudEpisodeList"></div>';
+   const sel=document.getElementById('cloudSeasonSelect');const renderEpisodes=()=>{
+    const host=document.getElementById('cloudEpisodeList');if(!host)return;
+    const eps=episodeRows.filter(e=>String(e.season_id)===String(sel?.value)&&e.is_published!==false).sort((a,b)=>(a.episode_number||0)-(b.episode_number||0));
+    host.innerHTML=eps.length?eps.map(e=>{
+      const qs=qualityRows.filter(q=>String(q.episode_id)===String(e.id)&&q.is_enabled!==false).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+      return '<article class="item"><div class="thumb" style="overflow:hidden">'+(e.thumbnail_url?'<img src="'+escH(e.thumbnail_url)+'" style="width:100%;height:100%;object-fit:cover">':'▶')+'</div><div class="iteminfo"><strong>قسمت '+escH(e.episode_number||'')+' — '+escH(e.title||'')+'</strong><span>'+escH(e.duration_minutes||'')+' دقیقه · '+qs.length+' کیفیت</span><div class="itembuttons">'+(qs.length?qs.map((q,i)=>'<button class="btn" type="button" data-episode-play="'+escH(q.id)+'">▶ '+escH(q.quality_label||'پخش')+(q.language_label?' · '+escH(q.language_label):'')+'</button>').join(''):'<span class="tiny">کیفیت پخشی ثبت نشده است.</span>')+'</div><div class="itembuttons">'+qs.filter(q=>q.download_url).map(q=>'<a class="small" href="'+escH(q.download_url)+'" target="_blank" rel="noopener">⇩ دانلود '+escH(q.quality_label||'')+'</a>').join('')+'</div></div></article>'
+    }).join(''):'<div class="notice">برای این فصل هنوز قسمت منتشرشده‌ای وجود ندارد.</div>';
+    host.querySelectorAll('[data-episode-play]').forEach(b=>b.addEventListener('click',()=>{
+      const q=qualityRows.find(x=>String(x.id)===String(b.dataset.episodePlay));if(!q?.video_url)return;
+      const e=episodeRows.find(x=>String(x.id)===String(q.episode_id));
+      const item={id:'episode-'+q.id,type:'video',title:(activeSeries.title||'سریال')+' · '+(e?.title||'قسمت'),artist:q.language_label||q.quality_label||'NOVA MEDIA',mediaUrl:q.video_url,coverUrl:e?.thumbnail_url||activeSeries.poster_url||'',lyrics:''};
+      try{openFullPlayer(item)}catch(_){window.open(q.video_url,'_blank','noopener')}
+    }));
+   };
+   if(sel){sel.addEventListener('change',renderEpisodes);if(seasons.length)renderEpisodes();else document.getElementById('cloudEpisodeList').innerHTML='<div class="notice">هنوز فصلی برای این سریال ثبت نشده است.</div>'}
+   if(typeof screen==='function')screen('series');else document.getElementById('seriesScreen').classList.add('active');
+ }
+ async function loadSeries(){
+  try{
+   const [s,se,e,q]=await Promise.all([
+    get('series?select=id,title,description,poster_url,backdrop_url,category_id,release_year,is_featured,is_published,show_in_slider,show_on_home&is_published=eq.true&order=created_at.desc'),
+    get('seasons?select=id,series_id,season_number,title,is_published&order=season_number.asc'),
+    get('episodes?select=id,season_id,episode_number,title,description,thumbnail_url,duration_minutes,is_published&order=episode_number.asc'),
+    get('episode_qualities?select=id,episode_id,quality_label,video_url,download_url,language_label,sort_order,is_enabled&is_enabled=eq.true&order=sort_order.asc')
+   ]);
+   seriesRows=s||[];seasonRows=se||[];episodeRows=e||[];qualityRows=q||[];renderSeries();
+   const feature=seriesRows.find(x=>x.is_featured)||seriesRows[0];
+   if(feature){const t=document.getElementById('seriesFeatureTitle'),d=document.getElementById('seriesFeatureDesc');if(t)t.textContent=feature.title;if(d)d.textContent=feature.description||'فصل‌ها و قسمت‌های این سریال را تماشا کن.';const art=document.querySelector('#seriesFeatureSlider .art');if(art)art.innerHTML=poster(feature.backdrop_url||feature.poster_url,feature.title);document.querySelectorAll('[data-open-series-detail]').forEach(b=>{b.onclick=()=>openSeries(feature.id)})}
+  }catch(err){const grid=seriesRoot();if(grid)grid.innerHTML='<div class="notice">اتصال سریال‌ها برقرار نشد: '+escH(err.message)+'</div>'}
+ }
+ async function loadAds(){
+  try{
+   const rows=await get('ad_slots?select=slot_key,title,placement,is_enabled,image_url,target_type,target_url,target_value,start_at,end_at&is_enabled=eq.true');
+   const now=Date.now();
+   rows.filter(x=>(!x.start_at||new Date(x.start_at).getTime()<=now)&&(!x.end_at||new Date(x.end_at).getTime()>=now)).forEach(ad=>{
+    const id={home:'adSlotHome',tracks:'adSlotTracks',music_videos:'adSlotVideos',movies:'adSlotMovies',series:'adSlotSeries',profile:'adSlotProfile'}[ad.placement];
+    const host=id&&document.getElementById(id);if(!host||!ad.image_url)return;
+    host.innerHTML='<a href="#" data-nova-ad="'+escH(ad.slot_key)+'" style="display:block;border-radius:14px;overflow:hidden"><img src="'+escH(ad.image_url)+'" alt="'+escH(ad.title||'تبلیغ')+'" style="width:100%;max-height:150px;object-fit:cover;display:block"></a>';
+    host.querySelector('[data-nova-ad]').addEventListener('click',ev=>{
+      ev.preventDefault();
+      if(ad.target_type==='external'&&ad.target_url){window.open(ad.target_url,'_blank','noopener');return}
+      const v=String(ad.target_value||'home');
+      if(['home','movies','seriesLibrary','musicVideos','account'].includes(v)){if(typeof screen==='function')screen(v);return}
+      if(v==='tracks'||v==='music_videos'){if(typeof screen==='function')screen(v==='tracks'?'home':'musicVideos');return}
+      if(v==='profile'){if(typeof screen==='function')screen('account')}
+    });
+   });
+  }catch(_){}
+ }
+ document.addEventListener('DOMContentLoaded',()=>{loadSeries();loadAds()});
+})();
+</script>
 </body></html>
