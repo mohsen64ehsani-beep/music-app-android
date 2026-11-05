@@ -1344,7 +1344,7 @@ load();initCloud();setInterval(()=>{renderHome();renderVideos();renderArtists();
  const BASE='https://dzrlguwrqabtfnhfpgjo.supabase.co',KEY='sb_publishable_mdWZIvIh_7QMQugjX6TDvA_eqsqZGnP';
  const ids={home:'adSlotHome',tracks:'adSlotTrack',music_videos:'adSlotVideos',movies:'adSlotMovies',series:'adSlotSeries',profile:'adSlotProfile'};
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- async async function goInternal(value){
+ async function goInternal(value){
   const v=String(value||'').trim(),parts=v.split(':');
   if(parts.length===2){const kind=parts[0],id=parts[1];
    if(kind==='movie'){document.querySelector('[data-cloud-movie-id="'+CSS.escape(id)+'"]')?.click();return}
