@@ -44,6 +44,61 @@
 @media(max-width:760px){.login-shell{grid-template-columns:1fr;width:min(470px,100%);min-height:0}.login-brand{padding:23px 25px 20px;border-left:0;border-bottom:1px solid #ffffff12;align-items:center;text-align:center}.login-orbit{width:65px;height:65px;margin-bottom:12px}.login-mark{width:52px;height:52px;border-radius:17px;font-size:29px}.login-brandname{font-size:21px}.login-tagline{font-size:8px}.login-brandline{margin:12px 0 7px}.login-brand>p{font-size:10px;margin-bottom:8px}.login-feature{display:none}.login-brand:after{display:none}.loginbox{margin:12px 20px 34px;padding:12px 8px}.loginbox h2{font-size:21px}.login-foot{bottom:10px}.dash-welcome{padding:21px 18px;min-height:175px}.dash-welcome h2{font-size:18px}.dash-welcome p{max-width:245px;line-height:1.9}.dash-art{width:100px;height:120px;flex-basis:100px;opacity:.8}.ring-one{width:95px;height:95px}.ring-two{width:72px;height:72px}.dash-art-core{width:53px;height:53px;border-radius:18px;font-size:30px}.dash-art-label{display:none}.dashboard-view .stats{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-view .quick{grid-template-columns:repeat(2,minmax(0,1fr))}.dash-lower{grid-template-columns:1fr}.dash-sidecol{grid-template-columns:1fr}}
 @media(max-width:420px){.dash-art{display:none}.dash-welcome h2{font-size:17px}.dash-welcome-actions{gap:10px;flex-wrap:wrap}.dash-welcome-actions .btn{font-size:10px}.dash-section-tag{font-size:7px;padding:5px 6px}}
 
+
+/* Mobile viewport and dashboard sizing fixes */
+html,body{width:100%;min-width:0;max-width:100%;overflow-x:hidden}
+body{min-height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.app{width:100%;min-width:0;max-width:100%}
+.main{min-width:0;width:100%;max-width:100%}
+.dashboard-view,.dashboard-view>*{min-width:0;max-width:100%}
+.dashboard-view .stats,.dashboard-view .layout,.dashboard-view .quick{width:100%;min-width:0}
+.dashboard-view .stat,.dashboard-view .card{min-width:0}
+.dash-welcome{width:100%;min-width:0}
+@media(max-width:900px){
+ .app{display:block!important;grid-template-columns:minmax(0,1fr)!important}
+ .side{position:fixed!important;right:0!important;top:0!important;bottom:0!important;width:min(300px,84vw)!important;height:100dvh!important;transform:translateX(105%)!important;visibility:hidden;transition:transform .25s,visibility .25s;z-index:40}
+ .side.open{transform:translateX(0)!important;visibility:visible;box-shadow:-18px 0 55px #0009}
+ .main{width:100%!important;max-width:none!important;margin:0!important;padding:14px 12px 40px!important}
+ .menu-toggle{display:grid!important}
+ .backdrop.show{display:block;position:fixed;inset:0;background:#03040ac9;z-index:39}
+ .login{padding:12px!important;align-items:center;overflow-y:auto}
+ .login-shell{display:block!important;width:min(420px,100%)!important;min-height:0!important;max-height:calc(100dvh - 24px);overflow-y:auto;border-radius:22px}
+ .login-brand{display:none!important}
+ .loginbox{width:100%!important;margin:0!important;padding:25px 22px!important}
+ .loginbox h2{font-size:22px}
+ .loginbox p{font-size:11px;margin-bottom:18px}
+ .loginbox label{margin:13px 0}
+ .loginbox input{height:46px;font-size:16px!important}
+ .login-submit{height:47px}
+ .login-foot{position:static;padding:0 0 14px;margin-top:-3px}
+ .dashboard-view{display:flex!important;width:100%!important;gap:13px!important}
+ .dashboard-view .stats{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+ .dashboard-view .quick{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .dashboard-view .layout,.dash-lower{grid-template-columns:minmax(0,1fr)!important}
+ .dash-sidecol{grid-template-columns:minmax(0,1fr)!important}
+ .dash-welcome{padding:19px 16px!important;min-height:0!important}
+ .dash-welcome-copy{min-width:0}
+ .dash-welcome h2{font-size:18px!important;line-height:1.7}
+ .dash-welcome p{max-width:100%;line-height:1.9}
+ .dash-art{width:90px!important;height:110px!important;flex:0 0 90px!important}
+ .dash-art .ring-one{width:88px;height:88px}
+ .dash-art .ring-two{width:68px;height:68px}
+ .dash-art-core{width:50px;height:50px;font-size:28px}
+ .dash-section-head{min-width:0}
+}
+@media(max-width:420px){
+ .loginbox{padding:20px 17px!important}
+ .login-security{padding-top:12px;margin-top:9px}
+ .dash-art{display:none!important}
+ .dash-welcome{padding:18px 15px!important}
+ .dash-welcome h2{font-size:17px!important}
+ .dashboard-view .stat{padding:11px!important}
+ .dashboard-view .num{font-size:22px!important}
+ .dashboard-view .card{padding:13px!important}
+ .dashboard-view .cardhead{flex-wrap:wrap}
+ .dashboard-view .dash-section-tag{font-size:7px}
+}
+
 </style></head>
 <body>
 <div class="app">
