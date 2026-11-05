@@ -1297,13 +1297,14 @@ load();initCloud();setInterval(()=>{renderHome();renderVideos();renderArtists();
   const select=$('cloudSeasonSelect');
   function renderSeason(){const chosen=ss.find(x=>String(x.id)===String(select.value));const eps=episodes.filter(e=>String(e.season_id)===String(chosen?.id)).sort((a,b)=>Number(a.episode_number)-Number(b.episode_number));$('cloudEpisodeList').innerHTML=eps.map(renderEpisode).join('')||'<div class="notice">برای این فصل هنوز قسمت منتشرشده‌ای ثبت نشده است.</div>';}
   select?.addEventListener('change',renderSeason);renderSeason();
-  detail.querySelectorAll('[data-episode-play]').forEach(b=>b.addEventListener('click',()=>{
+  detail.addEventListener('click',e=>{
+   const b=e.target.closest('[data-episode-play]');if(!b)return;
    const q=qualities.find(x=>String(x.id)===String(b.dataset.qualityId));if(!q?.video_url)return;
    const host=$('cloudEpisodePlayer'),url=String(q.video_url);
    detail.querySelectorAll('[data-episode-play]').forEach(x=>x.classList.toggle('primary',x===b));
    host.innerHTML='<div class="nova-player-head"><b>'+esc(selected.title)+' · '+esc(b.closest('.nova-episode')?.querySelector('strong')?.textContent||'قسمت')+'</b><span>'+esc(q.quality_label||'')+(q.language_label?' · '+esc(q.language_label):'')+'</span></div>'+( /\.(mp4|webm|ogg)(\?|$)/i.test(url)?'<video controls playsinline preload="metadata" style="width:100%;max-height:62vh;border-radius:14px;background:#000" src="'+esc(url)+'"></video>':'<a class="btn primary" href="'+esc(url)+'" target="_blank" rel="noopener">▶ بازکردن پخش‌کننده ویدئو</a>')+(q.download_url?'<a class="btn" style="margin-right:8px" href="'+esc(q.download_url)+'" target="_blank" rel="noopener" download>⇩ دانلود همین کیفیت</a>':'');
    host.scrollIntoView({behavior:'smooth',block:'nearest'});
-  }));
+  });
   screen('seriesScreen');
  }
  document.addEventListener('click',e=>{
