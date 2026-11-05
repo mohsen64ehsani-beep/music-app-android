@@ -7,6 +7,7 @@ on:
     paths:
       - 'music-app-android-project-v17-cloud-build.zip'
       - 'nova-app-latest.html'
+      - 'nova-series-and-ads.js'
       - '.github/workflows/build.yml'
 
 jobs:
@@ -22,8 +23,22 @@ jobs:
           test -f extracted/music-app-android-project/app/src/main/assets/index.html
           cp nova-app-latest.html extracted/music-app-android-project/app/src/main/assets/index.html
           cp nova-series-and-ads.js extracted/music-app-android-project/app/src/main/assets/nova-series-and-ads.js
-          printf '\n<script src="./nova-series-and-ads.js"></script>\n' >> extracted/music-app-android-project/app/src/main/assets/index.html
           test -s extracted/music-app-android-project/app/src/main/assets/index.html
+
+      - name: Validate JavaScript sources
+        run: |
+          node --check nova-series-and-ads.js
+          python3 - <<'PY'
+          import re, pathlib, subprocess
+          source = pathlib.Path('nova-app-latest.html').read_text(encoding='utf-8')
+          for index, match in enumerate(re.finditer(r'<script\\b([^>]*)>([\\s\\S]*?)</script\\s*>', source, re.I)):
+              attrs, code = match.group(1), match.group(2)
+              if not code.strip() or re.search(r'\\bsrc\\s*=', attrs, re.I) or 'application/json' in attrs:
+                  continue
+              path = pathlib.Path(f'/tmp/nova-inline-{index}.js')
+              path.write_text(code, encoding='utf-8')
+              subprocess.run(['node', '--check', str(path)], check=True)
+          PY
 
       - name: Set up Java
         uses: actions/setup-java@v4

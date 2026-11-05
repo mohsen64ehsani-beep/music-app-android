@@ -1253,88 +1253,7 @@ load();initCloud();setInterval(()=>{renderHome();renderVideos();renderArtists();
 .cloud-cinema-poster .poster-bottom{z-index:1;position:absolute;left:0;right:0;bottom:0}
 </style>
 
-<script id="nova-cloud-series-integration">
-(()=>{
- const BASE='https://dzrlguwrqabtfnhfpgjo.supabase.co';
- const KEY='sb_publishable_mdWZIvIh_7QMQugjX6TDvA_eqsqZGnP';
- const headers={apikey:KEY,Accept:'application/json'};
- const $=id=>document.getElementById(id);
- const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const fa=n=>Number(n||0).toLocaleString('fa-IR');
- let series=[],seasons=[],episodes=[],qualities=[],categories=[],activeCategory='all',selected=null;
- const screen=id=>{document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));const el=$(id);if(el)el.classList.add('active');window.scrollTo({top:0,behavior:'instant'});};
- async function rows(table,query){const r=await fetch(BASE+'/rest/v1/'+table+'?'+query,{headers});if(!r.ok)throw new Error(table+' '+r.status+' '+(await r.text()).slice(0,180));return r.json();}
- const seasonRows=s=>seasons.filter(x=>String(x.series_id)===String(s.id));
- const episodeRows=s=>{const ids=seasonRows(s).map(x=>String(x.id));return episodes.filter(x=>ids.includes(String(x.season_id)))};
- function renderCategories(){
-  const el=$('seriesCategories');if(!el)return;
-  const list=categories.filter(x=>!x.media_type||x.media_type==='series'||x.media_type==='both');
-  el.innerHTML='<button class="tab '+(activeCategory==='all'?'active':'')+'" data-cloud-series-category="all">همه</button>'+list.map(x=>'<button class="tab '+(String(activeCategory)===String(x.id)?'active':'')+'" data-cloud-series-category="'+esc(x.id)+'">'+esc(x.name)+'</button>').join('');
- }
- function renderCards(){
-  const root=$('seriesLibraryScreen');if(!root)return;
-  let grid=root.querySelector('.cinema-grid');if(!grid){grid=document.createElement('div');grid.className='cinema-grid';root.appendChild(grid);}
-  const search=root.querySelector('label.search input');const q=(search?.value||'').trim().toLowerCase();
-  const list=series.filter(s=>(activeCategory==='all'||String(s.category_id||'')===String(activeCategory))&&(!q||[s.title,s.description,s._category].join(' ').toLowerCase().includes(q)));
-  grid.innerHTML=list.map(s=>{
-   const ss=seasonRows(s),eps=episodeRows(s);
-   return '<button type="button" class="cinema-card" data-cloud-series-id="'+s.id+'"><div class="cinema-poster cloud-cinema-poster">'+(s.poster_url?'<img class="cloud-poster-img" src="'+esc(s.poster_url)+'" alt="'+esc(s.title)+'" loading="lazy">':'<span class="poster-symbol">📺</span>')+'<span class="poster-bottom"><b>'+esc(s.title)+'</b><small>'+esc(s._category||'سریال')+' · '+fa(ss.length)+' فصل · '+fa(eps.length)+' قسمت</small></span></div><div class="cinema-meta"><span>📺 سریال</span><span>'+fa(ss.length)+' فصل</span><span>'+fa(eps.length)+' قسمت</span></div><p>'+esc(s.description||'برای مشاهده فصل‌ها و قسمت‌ها انتخاب کنید.')+'</p><span class="cinema-open">مشاهده فصل‌ها و تماشا ←</span></button>';
-  }).join('')||'<div class="notice" style="grid-column:1/-1">سریال منتشرشده‌ای با این فیلتر پیدا نشد.</div>';
-  let status=$('cloudSeriesStatus');if(!status){status=document.createElement('div');status.id='cloudSeriesStatus';status.className='muted';status.style.cssText='padding:8px 2px;font-size:11px';const searchLabel=root.querySelector('label.search');searchLabel?.insertAdjacentElement('afterend',status);}
-  status.textContent=fa(list.length)+' سریال از دیتابیس آنلاین';
- }
- function renderEpisode(ep,index){
-  const qs=qualities.filter(q=>String(q.episode_id)===String(ep.id));
-  return '<article class="item nova-episode"><div class="thumb">'+(ep.thumbnail_url?'<img src="'+esc(ep.thumbnail_url)+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:10px">':'▶')+'</div><div class="iteminfo"><strong>قسمت '+fa(ep.episode_number)+' — '+esc(ep.title||'قسمت '+ep.episode_number)+'</strong><span>'+fa(ep.duration_minutes)+' دقیقه · '+fa(qs.length)+' کیفیت</span><p class="muted">'+esc(ep.description||'')+'</p><div class="itembuttons">'+(qs.length?qs.map((q,i)=>'<button type="button" class="btn" data-episode-play="'+ep.id+'" data-quality-id="'+q.id+'">▶ '+esc(q.quality_label||'پخش')+(q.language_label?' · '+esc(q.language_label):'')+'</button>').join(''):'<span class="muted">لینک پخشی ثبت نشده است.</span>')+'</div>'+(qs.some(q=>q.download_url)?'<div class="itembuttons">'+qs.filter(q=>q.download_url).map(q=>'<a class="small" href="'+esc(q.download_url)+'" target="_blank" rel="noopener" download>⇩ دانلود '+esc(q.quality_label||'')+'</a>').join('')+'</div>':'')+'</div></article>';
- }
- function openSeries(id){
-  selected=series.find(x=>String(x.id)===String(id));if(!selected)return;
-  const detail=$('seriesScreen');if(!detail)return;
-  const ss=seasonRows(selected).sort((a,b)=>Number(a.season_number)-Number(b.season_number));
-  const backdrop=selected.backdrop_url||selected.poster_url||'';
-  detail.innerHTML='<button type="button" class="tab" id="cloudSeriesBack">← بازگشت به سریال‌ها</button><div class="movie-detail-hero" style="'+(backdrop?'background-image:linear-gradient(90deg,rgba(8,7,13,.96),rgba(8,7,13,.45)),url(&quot;'+esc(backdrop)+'&quot;);background-size:cover;background-position:center;':'')+'"><div class="movie-detail-content"><span class="pill">NOVA SERIES</span><h1>'+esc(selected.title)+'</h1><div class="movie-facts"><span>'+esc(selected._category||'سریال')+'</span><span>'+(selected.release_year?fa(selected.release_year):'')+'</span><span>'+fa(ss.length)+' فصل</span></div><p>'+esc(selected.description||'')+'</p></div></div><div class="panel" style="margin-top:14px"><div class="sectionhead"><h3>فصل‌ها و قسمت‌ها</h3></div><label class="field">انتخاب فصل<select id="cloudSeasonSelect">'+ss.map((s,i)=>'<option value="'+s.id+'">فصل '+fa(s.season_number)+(s.title?' · '+esc(s.title):'')+'</option>').join('')+'</select></label><div id="cloudEpisodeList"></div><div id="cloudEpisodePlayer" class="nova-episode-player notice" style="margin-top:14px">برای پخش، کیفیت موردنظر را از فهرست قسمت‌ها انتخاب کنید.</div></div>';
-  $('cloudSeriesBack').addEventListener('click',()=>screen('seriesLibraryScreen'));
-  const select=$('cloudSeasonSelect');
-  function renderSeason(){const chosen=ss.find(x=>String(x.id)===String(select.value));const eps=episodes.filter(e=>String(e.season_id)===String(chosen?.id)).sort((a,b)=>Number(a.episode_number)-Number(b.episode_number));$('cloudEpisodeList').innerHTML=eps.map(renderEpisode).join('')||'<div class="notice">برای این فصل هنوز قسمت منتشرشده‌ای ثبت نشده است.</div>';}
-  select?.addEventListener('change',renderSeason);renderSeason();
-  detail.addEventListener('click',e=>{
-   const b=e.target.closest('[data-episode-play]');if(!b)return;
-   const q=qualities.find(x=>String(x.id)===String(b.dataset.qualityId));if(!q?.video_url)return;
-   const host=$('cloudEpisodePlayer'),url=String(q.video_url);
-   detail.querySelectorAll('[data-episode-play]').forEach(x=>x.classList.toggle('primary',x===b));
-   host.innerHTML='<div class="nova-player-head"><b>'+esc(selected.title)+' · '+esc(b.closest('.nova-episode')?.querySelector('strong')?.textContent||'قسمت')+'</b><span>'+esc(q.quality_label||'')+(q.language_label?' · '+esc(q.language_label):'')+'</span></div>'+( /\.(mp4|webm|ogg)(\?|$)/i.test(url)?'<video controls playsinline preload="metadata" style="width:100%;max-height:62vh;border-radius:14px;background:#000" src="'+esc(url)+'"></video>':'<a class="btn primary" href="'+esc(url)+'" target="_blank" rel="noopener">▶ بازکردن پخش‌کننده ویدئو</a>')+(q.download_url?'<a class="btn" style="margin-right:8px" href="'+esc(q.download_url)+'" target="_blank" rel="noopener" download>⇩ دانلود همین کیفیت</a>':'');
-   host.scrollIntoView({behavior:'smooth',block:'nearest'});
-  });
-  screen('seriesScreen');
- }
- document.addEventListener('click',e=>{
-  const cat=e.target.closest('[data-cloud-series-category]');if(cat){activeCategory=cat.dataset.cloudSeriesCategory;renderCategories();renderCards();return;}
-  const card=e.target.closest('[data-cloud-series-id]');if(card){e.preventDefault();e.stopImmediatePropagation();openSeries(card.dataset.cloudSeriesId);return;}
- },true);
- $('seriesLibraryScreen')?.querySelector('label.search input')?.addEventListener('input',renderCards);
- const feature=$('#seriesFeatureSlider [data-open-series-detail]');
- if(feature)feature.addEventListener('click',e=>{if(series.length){e.preventDefault();e.stopImmediatePropagation();openSeries((series.find(s=>s.show_in_slider)||series.find(s=>s.is_featured)||series[0]).id)}},true);
- (async()=>{
-  try{
-   const [s,c,se,ep,q]=await Promise.all([
-    rows('series','select=id,title,description,poster_url,backdrop_url,category_id,release_year,is_featured,show_in_slider,show_on_home,created_at&is_published=eq.true&order=created_at.desc'),
-    rows('media_categories','select=id,name,media_type,sort_order&is_published=eq.true&order=sort_order.asc'),
-    rows('seasons','select=id,series_id,season_number,title,is_published&is_published=eq.true&order=season_number.asc'),
-    rows('episodes','select=id,season_id,episode_number,title,description,thumbnail_url,duration_minutes,is_published&is_published=eq.true&order=episode_number.asc'),
-    rows('episode_qualities','select=id,episode_id,quality_label,video_url,download_url,language_label,sort_order,is_enabled&is_enabled=eq.true&order=sort_order.asc')
-   ]);
-   categories=c;series=s;seasons=se;episodes=ep;qualities=q;
-   const map=new Map(categories.map(x=>[String(x.id),x.name]));
-   series=series.map(x=>({...x,_category:map.get(String(x.category_id))||''}));
-   renderCategories();renderCards();
-   const featured=series.find(x=>x.show_in_slider)||series.find(x=>x.is_featured)||series[0];
-   if(featured){if($('seriesFeatureTitle'))$('seriesFeatureTitle').textContent=featured.title;if($('seriesFeatureDesc'))$('seriesFeatureDesc').textContent=featured.description||featured._category||'سریال منتخب نوا مدیا';}
-  }catch(err){
-   const grid=$('#seriesLibraryScreen .cinema-grid');if(grid)grid.innerHTML='<div class="notice" style="grid-column:1/-1">دریافت سریال‌ها ناموفق بود: '+esc(err.message)+'</div>';
-  }
- })();
-})();
-</script>
+
 <style id="nova-cloud-series-style">
 .nova-episode{align-items:flex-start;margin:10px 0}.nova-episode .iteminfo{min-width:0}.nova-episode .iteminfo p{margin:5px 0}.nova-episode .itembuttons{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}.nova-episode-player{padding:14px;background:linear-gradient(135deg,#211936,#151523);border:1px solid #594078}.nova-player-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}.nova-player-head span{color:#c4a7ff;font-size:12px}
 </style>
@@ -1389,16 +1308,7 @@ load();initCloud();setInterval(()=>{renderHome();renderVideos();renderArtists();
 </style>
 
 
-<script id="nova-series-home-entry">
-document.addEventListener('click',function(e){
- const b=e.target.closest('[data-open-series-detail]');
- if(!b)return;
- const cards=document.querySelectorAll('[data-cloud-series-id]');
- if(!cards.length)return;
- e.preventDefault();e.stopImmediatePropagation();
- const featured=[...cards].find(x=>x.querySelector('.poster-tag')?.textContent?.includes('منتخب'))||cards[0];
- featured.click();
-},true);
-</script>
 
+
+<script src="./nova-series-and-ads.js"></script>
 </body></html>
