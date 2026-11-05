@@ -1465,7 +1465,12 @@ document.addEventListener('click',function(e){
       const v=String(ad.target_value||'home');
       if(['home','movies','seriesLibrary','musicVideos','account'].includes(v)){if(typeof screen==='function')screen(v);return}
       if(v==='tracks'||v==='music_videos'){if(typeof screen==='function')screen(v==='tracks'?'home':'musicVideos');return}
-      if(v==='profile'){if(typeof screen==='function')screen('account')}
+      if(v==='profile'){if(typeof screen==='function')screen('account');return}
+      const [kind,rawId]=v.split(':');const contentId=rawId||'';
+      if(kind==='series'&&contentId){openSeries(contentId);return}
+      if(kind==='movie'&&contentId){const card=[...document.querySelectorAll('[data-cloud-movie-id]')].find(el=>String(el.dataset.cloudMovieId)===contentId);if(card){card.click();return}if(typeof screen==='function')screen('moviesScreen');return}
+      if((kind==='track'||kind==='music_video')&&contentId){const item=items.find(z=>String(z.cloudId)===contentId&&z.type===(kind==='track'?'music':'video'));if(item){openDetail(item);return}}
+      if(kind==='episode'&&contentId){const ep=episodeRows.find(z=>String(z.id)===contentId);const q=qualityRows.find(z=>String(z.episode_id)===contentId&&z.is_enabled!==false&&z.video_url);if(q){openFullPlayer({id:'episode-'+q.id,type:'video',title:ep?.title||'قسمت سریال',artist:q.language_label||q.quality_label||'NOVA MEDIA',mediaUrl:q.video_url,coverUrl:ep?.thumbnail_url||activeSeries?.poster_url||'',lyrics:''});return}}
     });
    });
   }catch(_){}
