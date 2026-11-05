@@ -7,6 +7,7 @@ on:
     paths:
       - 'music-app-android-project-v17-cloud-build.zip'
       - 'nova-app-latest.html'
+      - 'nova-series-and-ads.js'
       - '.github/workflows/build.yml'
 
 jobs:
@@ -21,8 +22,6 @@ jobs:
           unzip -o music-app-android-project-v17-cloud-build.zip -d extracted
           test -f extracted/music-app-android-project/app/src/main/assets/index.html
           cp nova-app-latest.html extracted/music-app-android-project/app/src/main/assets/index.html
-          cp nova-series-and-ads.js extracted/music-app-android-project/app/src/main/assets/nova-series-and-ads.js
-          printf '\n<script src="./nova-series-and-ads.js"></script>\n' >> extracted/music-app-android-project/app/src/main/assets/index.html
           test -s extracted/music-app-android-project/app/src/main/assets/index.html
 
       - name: Set up Java
