@@ -1336,4 +1336,49 @@ load();initCloud();setInterval(()=>{renderHome();renderVideos();renderArtists();
 .nova-episode{align-items:flex-start;margin:10px 0}.nova-episode .iteminfo{min-width:0}.nova-episode .iteminfo p{margin:5px 0}.nova-episode .itembuttons{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}.nova-episode-player{padding:14px;background:linear-gradient(135deg,#211936,#151523);border:1px solid #594078}.nova-player-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}.nova-player-head span{color:#c4a7ff;font-size:12px}
 </style>
 
+
+<script id="nova-ad-slots-live">
+(()=>{
+ const BASE='https://dzrlguwrqabtfnhfpgjo.supabase.co',KEY='sb_publishable_mdWZIvIh_7QMQugjX6TDvA_eqsqZGnP';
+ const ids={home:'adSlotHome',tracks:'adSlotTrack',music_videos:'adSlotVideos',movies:'adSlotMovies',series:'adSlotSeries',profile:'adSlotProfile'};
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function goInternal(value){
+  const v=String(value||'').trim(),parts=v.split(':');
+  if(parts.length===2&&parts[0]==='movie'){document.querySelector('[data-cloud-movie-id="'+CSS.escape(parts[1])+'"]')?.click();return}
+  if(parts.length===2&&parts[0]==='series'){document.querySelector('[data-cloud-series-id="'+CSS.escape(parts[1])+'"]')?.click();return}
+  const target={home:'homeScreen',tracks:'tracksScreen',music_videos:'videosScreen',movies:'moviesScreen',series:'seriesLibraryScreen',profile:'accountScreen'}[v];
+  if(target){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(target)?.classList.add('active');window.scrollTo({top:0,behavior:'instant'});}
+ }
+ function render(row){
+  const id=ids[row.placement],host=id&&document.getElementById(id);if(!host)return;
+  const now=Date.now();if(row.start_at&&new Date(row.start_at).getTime()>now)return;if(row.end_at&&new Date(row.end_at).getTime()<now)return;
+  const img=row.image_url;if(!img)return;
+  const internal=row.target_type==='internal',target=internal?row.target_value:row.target_url;
+  host.innerHTML='<a class="nova-live-ad" href="'+(internal?'#':esc(target||'#'))+'" '+(internal?'data-nova-ad-internal="'+esc(target)+'"':'target="_blank" rel="noopener noreferrer"')+' aria-label="'+esc(row.title||'تبلیغ')+'"><img src="'+esc(img)+'" alt="'+esc(row.title||'بنر تبلیغاتی')+'" loading="lazy"><span>'+esc(row.title||'')+'</span></a>';
+  host.querySelector('[data-nova-ad-internal]')?.addEventListener('click',e=>{e.preventDefault();goInternal(e.currentTarget.dataset.novaAdInternal)});
+ }
+ (async()=>{
+  try{
+   const r=await fetch(BASE+'/rest/v1/ad_slots?select=id,slot_key,title,placement,is_enabled,image_url,target_type,target_url,target_value,start_at,end_at&is_enabled=eq.true',{headers:{apikey:KEY,Accept:'application/json'}});
+   if(!r.ok)throw Error('ad_slots '+r.status);
+   const rows=await r.json();rows.forEach(render);
+  }catch(e){console.info('NOVA ad slots are not available yet:',e.message)}
+ })();
+})();
+</script>
+<style id="nova-player-and-ads-polish">
+.nova-live-ad{position:relative;display:block;overflow:hidden;border-radius:15px;min-height:74px;background:linear-gradient(120deg,#241a3a,#171323);border:1px solid #8b5cf644;text-decoration:none;color:#fff}
+.nova-live-ad img{display:block;width:100%;max-height:170px;min-height:74px;object-fit:cover}
+.nova-live-ad span{position:absolute;right:12px;bottom:9px;padding:4px 9px;border-radius:8px;background:#090711b8;font-size:11px}
+#fullPlayer{background:#090710}
+#fullPlayer .fp-backdrop{filter:blur(42px) saturate(1.35);opacity:.48}
+#fullPlayer .fp-art-wrap{border:1px solid #a78bfa55;box-shadow:0 22px 70px #0008,0 0 34px #8b5cf622;border-radius:24px;overflow:hidden}
+#fullPlayer .fp-wave-wrap{padding:15px 17px;border:1px solid #8b5cf633;background:linear-gradient(135deg,#21172fdd,#11101add);border-radius:18px}
+#fullPlayer .fp-play{background:linear-gradient(135deg,#8b5cf6,#ec4899);box-shadow:0 8px 28px #a855f655}
+#fullPlayer .fp-tool{border-color:#8b5cf633;background:#21172f99}
+#fullPlayer.video-mode .fp-art-wrap{display:none}
+#fullPlayer.video-mode #fpMediaHost{width:100%;max-width:920px;margin:12px auto 20px;border-radius:18px;overflow:hidden;background:#000;box-shadow:0 20px 60px #0009}
+#fullPlayer.video-mode #fpMediaHost video{width:100%;max-height:62vh;object-fit:contain;background:#000}
+</style>
+
 </body></html>
