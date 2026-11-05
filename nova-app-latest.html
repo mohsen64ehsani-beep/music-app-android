@@ -1463,7 +1463,7 @@ document.addEventListener('click',function(e){
       ev.preventDefault();
       if(ad.target_type==='external'&&ad.target_url){window.open(ad.target_url,'_blank','noopener');return}
       const v=String(ad.target_value||'home');
-      if(['home','movies','seriesLibrary','musicVideos','account'].includes(v)){if(typeof screen==='function')screen(v);return}
+      if(['home','movies','seriesLibrary','videos','account'].includes(v)){if(typeof screen==='function')screen(v);return}
       if(v==='tracks'||v==='music_videos'){if(typeof screen==='function')screen(v==='tracks'?'home':'musicVideos');return}
       if(v==='profile'){if(typeof screen==='function')screen('account');return}
       const [kind,rawId]=v.split(':');const contentId=rawId||'';
