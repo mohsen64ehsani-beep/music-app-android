@@ -6,6 +6,7 @@ on:
   push:
     paths:
       - 'music-app-android-project-v17-cloud-build.zip'
+      - 'nova-app-latest.html'
       - '.github/workflows/build.yml'
 
 jobs:
@@ -18,6 +19,8 @@ jobs:
       - name: Extract project
         run: |
           unzip -o music-app-android-project-v17-cloud-build.zip -d extracted
+          test -f extracted/music-app-android-project/app/src/main/assets/index.html
+          cp nova-app-latest.html extracted/music-app-android-project/app/src/main/assets/index.html
 
       - name: Set up Java
         uses: actions/setup-java@v4
