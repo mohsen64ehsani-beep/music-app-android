@@ -8,6 +8,7 @@ on:
       - 'music-app-android-project-v17-cloud-build.zip'
       - 'nova-app-latest.html'
       - 'nova-series-and-ads.js'
+      - 'nova-launcher-icon.xml'
       - '.github/workflows/build.yml'
 
 jobs:
@@ -23,6 +24,29 @@ jobs:
           test -f extracted/music-app-android-project/app/src/main/assets/index.html
           cp nova-app-latest.html extracted/music-app-android-project/app/src/main/assets/index.html
           cp nova-series-and-ads.js extracted/music-app-android-project/app/src/main/assets/nova-series-and-ads.js
+          mkdir -p extracted/music-app-android-project/app/src/main/res/drawable
+          cp nova-launcher-icon.xml extracted/music-app-android-project/app/src/main/res/drawable/ic_launcher.xml
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          manifest = Path('extracted/music-app-android-project/app/src/main/AndroidManifest.xml')
+          if not manifest.exists():
+              raise SystemExit('AndroidManifest.xml not found')
+          source = manifest.read_text(encoding='utf-8')
+          match = re.search(r'<application\\b[^>]*>', source, re.S)
+          if not match:
+              raise SystemExit('application tag not found in AndroidManifest.xml')
+          tag = match.group(0)
+          values = {'label': 'NOVA MEDIA', 'icon': '@drawable/ic_launcher', 'roundIcon': '@drawable/ic_launcher'}
+          for key, value in values.items():
+              pattern = r'android:' + key + r'\\s*=\\s*"[^"]*"'
+              replacement = 'android:' + key + '="' + value + '"'
+              if re.search(pattern, tag):
+                  tag = re.sub(pattern, replacement, tag, count=1)
+              else:
+                  tag = tag[:-1] + ' ' + replacement + '>'
+          manifest.write_text(source[:match.start()] + tag + source[match.end():], encoding='utf-8')
+          PY
           test -s extracted/music-app-android-project/app/src/main/assets/index.html
 
       - name: Validate JavaScript sources
