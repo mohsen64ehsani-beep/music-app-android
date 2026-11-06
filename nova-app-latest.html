@@ -1341,7 +1341,7 @@ function paint(kind,item,index,total){
    if(prev)prev.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();move(-1)},true);
    if(next)next.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();move(1)},true);
    const button=document.querySelector('#'+(kind==='movie'?'movieFeatureSlider':'seriesFeatureSlider')+' [data-open-'+(kind==='movie'?'movie':'series')+'-detail]');
-   if(button)button.addEventListener('click',e=>{const item=list[idx[kind]];if(!item)return;e.preventDefault();e.stopImmediatePropagation();const screenId=kind==='movie'?'moviesScreen':'seriesLibraryScreen';document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(screenId)?.classList.add('active');setTimeout(()=>{const card=document.querySelector(kind==='movie'?'[data-cloud-movie-id="'+CSS.escape(String(item.id))+'"]':'[data-nova-series="'+CSS.escape(String(item.id))+'"]');card?.click()},250)},true);
+   if(button)button.addEventListener('click',e=>{const item=list[idx[kind]];if(!item)return;e.preventDefault();e.stopImmediatePropagation();const screenId=kind==='movie'?'moviesScreen':'seriesLibraryScreen';document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(screenId)?.classList.add('active');let attempts=0;const openSelected=()=>{const card=document.querySelector(kind==='movie'?'[data-cloud-movie-id="'+CSS.escape(String(item.id))+'"]':'[data-nova-series="'+CSS.escape(String(item.id))+'"]');if(card){card.click();return}if(attempts++<25)setTimeout(openSelected,200)};setTimeout(openSelected,180)},true);
   }
  }catch(e){console.info('NOVA cinema slider posters unavailable:',e.message)}
 })();
