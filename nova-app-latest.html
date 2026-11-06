@@ -1208,15 +1208,9 @@ load();initCloud();setInterval(()=>{renderHome();renderVideos();renderArtists();
   const detail=document.getElementById('movieDetailScreen');if(!detail)return;
   const backdrop=selected.backdrop_url||selected.poster_url||'';
   const qs=qualities.filter(q=>String(q.movie_id)===String(selected.id));
-  detail.innerHTML='<button class="tab" id="cloudMovieBack">← بازگشت به فیلم‌ها</button><div class="movie-detail-hero" style="'+(backdrop?'background-image:linear-gradient(90deg,rgba(8,7,13,.96),rgba(8,7,13,.45)),url(&quot;'+esc(backdrop)+'&quot;);background-size:cover;background-position:center;':'')+'"><div class="movie-detail-content"><span class="pill">فیلم منتشرشده در نوا مدیا</span><h1>'+esc(selected.title)+'</h1><div class="movie-facts"><span>'+(selected.release_year?fa(selected.release_year):'')+'</span><span>'+esc(selected._category||'فیلم')+'</span><span>'+(selected.duration_minutes?fa(selected.duration_minutes)+' دقیقه':'')+'</span></div><p>'+esc(selected.description||'')+'</p></div></div><div class="panel" style="margin-top:14px"><h3>کیفیت‌های پخش و دانلود</h3><div id="cloudMoviePlayer" class="notice">برای شروع، یکی از کیفیت‌ها را انتخاب کنید.</div><div class="actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">'+qs.map((q,i)=>'<button type="button" class="btn" data-cloud-quality="'+i+'">'+esc(q.quality_label||'کیفیت '+(i+1))+(q.language_label?' · '+esc(q.language_label):'')+'</button>').join('')+'</div>'+(qs.length?'':'<div class="notice">هنوز لینک کیفیت پخش برای این فیلم ثبت نشده است.</div>')+'</div>';
+  detail.innerHTML='<button class="tab" id="cloudMovieBack">← بازگشت به فیلم‌ها</button><div class="movie-detail-hero" style="'+(backdrop?'background-image:linear-gradient(90deg,rgba(8,7,13,.96),rgba(8,7,13,.45)),url(&quot;'+esc(backdrop)+'&quot;);background-size:cover;background-position:center;':'')+'"><div class="movie-detail-content"><span class="pill">فیلم منتشرشده در نوا مدیا</span><h1>'+esc(selected.title)+'</h1><div class="movie-facts"><span>'+(selected.release_year?fa(selected.release_year):'')+'</span><span>'+esc(selected._category||'فیلم')+'</span><span>'+(selected.duration_minutes?fa(selected.duration_minutes)+' دقیقه':'')+'</span></div><p>'+esc(selected.description||'')+'</p></div></div><div class="panel" style="margin-top:14px"><h3>کیفیت‌های پخش و دانلود</h3><div id="cloudMoviePlayer" class="notice"><button type="button" class="btn primary" id="cloudMoviePlayDefault">▶ پخش آنلاین</button><span style="display:block;margin-top:8px">برای شروع پخش، دکمه را بزنید یا کیفیت دلخواه را انتخاب کنید.</span></div><div class="actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">'+qs.map((q,i)=>'<button type="button" class="btn" data-cloud-quality="'+i+'">'+esc(q.quality_label||'کیفیت '+(i+1))+(q.language_label?' · '+esc(q.language_label):'')+'</button>').join('')+'</div>'+(qs.length?'':'<div class="notice">هنوز لینک کیفیت پخش برای این فیلم ثبت نشده است.</div>')+'</div>';
   detail.querySelector('#cloudMovieBack').addEventListener('click',()=>screen('moviesScreen'));
-  detail.querySelectorAll('[data-cloud-quality]').forEach(b=>b.addEventListener('click',()=>{
-   const q=qs[Number(b.dataset.cloudQuality)];if(!q)return;
-   const player=detail.querySelector('#cloudMoviePlayer');
-   const url=String(q.video_url||'');
-   if(/\.(mp4|webm|ogg)(\?|$)/i.test(url)){player.innerHTML='<video controls playsinline style="width:100%;max-height:65vh;border-radius:12px" src="'+esc(url)+'"></video>';}
-   else player.innerHTML='<a class="btn" href="'+esc(url)+'" target="_blank" rel="noopener">باز کردن لینک پخش / دانلود</a>';
-  }));
+  const startMoviePlayback=q=>{if(!q?.video_url)return;const player=detail.querySelector('#cloudMoviePlayer');const url=String(q.video_url||'');if(/\.(mp4|webm|ogg)(\?|$)/i.test(url)){player.innerHTML='<video controls playsinline preload="metadata" style="width:100%;max-height:65vh;border-radius:12px;background:#000" src="'+esc(url)+'"></video>';const v=player.querySelector('video');v?.play?.().catch(()=>{});}else player.innerHTML='<a class="btn primary" href="'+esc(url)+'" target="_blank" rel="noopener">▶ باز کردن پخش‌کننده آنلاین</a>';};detail.querySelector('#cloudMoviePlayDefault')?.addEventListener('click',()=>startMoviePlayback(qs.find(q=>q.video_url)));detail.querySelectorAll('[data-cloud-quality]').forEach(b=>b.addEventListener('click',()=>startMoviePlayback(qs[Number(b.dataset.cloudQuality)])));
   screen('movieDetailScreen');
  }
  document.addEventListener('click',e=>{
@@ -1225,7 +1219,7 @@ load();initCloud();setInterval(()=>{renderHome();renderVideos();renderArtists();
  },true);
  document.getElementById('movieSearch')?.addEventListener('input',renderMovies);
  const feature=document.querySelector('#movieFeatureSlider [data-open-movie-detail]');
- if(feature)feature.addEventListener('click',e=>{if(movies.length){e.preventDefault();e.stopImmediatePropagation();openMovie((movies.find(m=>m.is_featured)||movies[0]).id)}},true);
+ if(feature)feature.addEventListener('click',e=>{if(movies.length){e.preventDefault();e.stopImmediatePropagation();openMovie((movies.find(m=>m.show_in_slider)||movies.find(m=>m.is_featured)||movies[0]).id)}},true);
  (async()=>{
   try{
    const [m,c,q]=await Promise.all([
@@ -1239,7 +1233,7 @@ load();initCloud();setInterval(()=>{renderHome();renderVideos();renderArtists();
    qualities=q;
    renderCategories();renderMovies();
    const featured=movies.find(x=>x.show_in_slider)||movies.find(x=>x.is_featured)||movies[0];
-   if(featured){const title=document.getElementById('movieFeatureTitle'),desc=document.getElementById('movieFeatureDesc');if(title)title.textContent=featured.title;if(desc)desc.textContent=featured.description||featured._category||'فیلم منتخب نوا مدیا';}
+   if(featured){const title=document.getElementById('movieFeatureTitle'),desc=document.getElementById('movieFeatureDesc'),hero=document.getElementById('movieFeatureSlider');if(title)title.textContent=featured.title;if(desc)desc.textContent=featured.description||featured._category||'فیلم منتخب نوا مدیا';if(hero){const image=featured.backdrop_url||featured.poster_url||'';hero.style.backgroundImage=image?'linear-gradient(90deg,rgba(8,7,13,.88),rgba(8,7,13,.34)),url("'+String(image).replace(/["<>]/g,'')+'")':'';hero.style.backgroundSize='cover';hero.style.backgroundPosition='center';const art=hero.querySelector('.art');if(art)art.style.display=image?'none':'';hero.dataset.featuredMovieId=featured.id;}}
   }catch(err){
    const grid=document.querySelector('#moviesScreen .cinema-grid');
    if(grid)grid.innerHTML='<div class="notice" style="grid-column:1/-1">دریافت فیلم‌های آنلاین ناموفق بود: '+esc(err.message)+'</div>';
@@ -1311,4 +1305,47 @@ load();initCloud();setInterval(()=>{renderHome();renderVideos();renderArtists();
 
 
 <script src="./nova-series-and-ads.js"></script>
+
+<style id="nova-ui-player-fixes">
+#moodTabs.genre-grid{display:flex!important;flex-wrap:nowrap!important;gap:12px!important;overflow-x:auto!important;overflow-y:hidden!important;padding:2px 2px 12px!important;scroll-snap-type:x mandatory;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+#moodTabs .genre-tile{flex:0 0 clamp(142px,42vw,176px)!important;min-height:112px!important;scroll-snap-align:start}
+#fpSeek{direction:ltr!important;transform:none!important}
+#fpMediaHost.fp-force-fullscreen{opacity:1!important;pointer-events:auto!important;height:100dvh!important;min-height:100dvh!important;overflow:visible!important;visibility:visible!important}
+#fpMediaHost.fp-force-fullscreen .fp-video-controls{z-index:20!important}
+#fpMediaHost.fp-force-fullscreen video{width:100%!important;height:100%!important;max-height:100dvh!important}
+</style>
+<script id="nova-cinema-slider-fixes">
+(()=>{'use strict';
+const BASE='https://dzrlguwrqabtfnhfpgjo.supabase.co',KEY='sb_publishable_mdWZIvIh_7QMQugjX6TDvA_eqsqZGnP';
+async function getRows(table,query){const r=await fetch(BASE+'/rest/v1/'+table+'?'+query,{headers:{apikey:KEY,Accept:'application/json'}});if(!r.ok)throw Error(table+' '+r.status);return r.json()}
+function paint(kind,item,index,total){
+ const hero=document.getElementById(kind==='movie'?'movieFeatureSlider':'seriesFeatureSlider');if(!hero||!item)return;
+ const title=document.getElementById(kind==='movie'?'movieFeatureTitle':'seriesFeatureTitle'),desc=document.getElementById(kind==='movie'?'movieFeatureDesc':'seriesFeatureDesc'),count=document.getElementById(kind==='movie'?'movieSlideCount':'seriesSlideCount');
+ if(title)title.textContent=item.title||'';if(desc)desc.textContent=item.description||'منتخب نوا مدیا';
+ const image=item.backdrop_url||item.poster_url||'';
+ hero.style.backgroundImage=image?'linear-gradient(90deg,rgba(8,7,13,.88),rgba(8,7,13,.3)),url("'+String(image).replace(/["<>]/g,'')+'")':'';
+ hero.style.backgroundSize='cover';hero.style.backgroundPosition='center';
+ const art=hero.querySelector('.art');if(art)art.style.display=image?'none':'';
+ hero.dataset.novaCurrentId=item.id;if(count)count.textContent=String(index+1).padStart(2,'0')+' / '+String(total).padStart(2,'0');
+}
+(async()=>{
+ try{
+  const [movies,series]=await Promise.all([
+   getRows('movies','select=id,title,description,poster_url,backdrop_url,show_in_slider,is_featured,is_published&is_published=eq.true&show_in_slider=eq.true&order=created_at.desc'),
+   getRows('series','select=id,title,description,poster_url,backdrop_url,show_in_slider,is_featured,is_published&is_published=eq.true&show_in_slider=eq.true&order=created_at.desc')
+  ]);
+  const lists={movie:movies,series},idx={movie:0,series:0};
+  for(const kind of ['movie','series']){
+   const list=lists[kind];if(!list.length)continue;paint(kind,list[0],0,list.length);
+   const prev=document.querySelector('[data-slide-prev="'+kind+'"]'),next=document.querySelector('[data-slide-next="'+kind+'"]');
+   const move=delta=>{idx[kind]=(idx[kind]+delta+list.length)%list.length;paint(kind,list[idx[kind]],idx[kind],list.length)};
+   if(prev)prev.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();move(-1)},true);
+   if(next)next.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();move(1)},true);
+   const button=document.querySelector('#'+(kind==='movie'?'movieFeatureSlider':'seriesFeatureSlider')+' [data-open-'+(kind==='movie'?'movie':'series')+'-detail]');
+   if(button)button.addEventListener('click',e=>{const item=list[idx[kind]];if(!item)return;e.preventDefault();e.stopImmediatePropagation();const screenId=kind==='movie'?'moviesScreen':'seriesLibraryScreen';document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(screenId)?.classList.add('active');setTimeout(()=>{const card=document.querySelector(kind==='movie'?'[data-cloud-movie-id="'+CSS.escape(String(item.id))+'"]':'[data-nova-series="'+CSS.escape(String(item.id))+'"]');card?.click()},250)},true);
+  }
+ }catch(e){console.info('NOVA cinema slider posters unavailable:',e.message)}
+})();
+})();
+</script>
 </body></html>
