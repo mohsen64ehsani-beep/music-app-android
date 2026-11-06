@@ -1261,8 +1261,7 @@ load();initCloud();setInterval(()=>{renderHome();renderVideos();renderArtists();
  async function goInternal(value){
   const v=String(value||'').trim(),parts=v.split(':');
   if(parts.length===2){const kind=parts[0],id=parts[1];
-   if(kind==='movie'){document.querySelector('[data-cloud-movie-id="'+CSS.escape(id)+'"]')?.click();return}
-   if(kind==='series'){document.querySelector('[data-nova-series="'+CSS.escape(id)+'"]')?.click();return}
+   if(kind==='movie'||kind==='series'){const page=kind==='movie'?'moviesScreen':'seriesLibraryScreen';document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));document.getElementById(page)?.classList.add('active');setTimeout(()=>document.querySelector(kind==='movie'?'[data-cloud-movie-id="'+CSS.escape(id)+'"]':'[data-nova-series="'+CSS.escape(id)+'"]')?.click(),220);return}
    if(kind==='track'||kind==='music_video'){if(!window.__novaOpenCloudContent?.(kind,id))throw Error('این محتوا هنوز در فهرست اپ بارگذاری نشده است.');return}
    if(kind==='episode'){await window.__novaOpenEpisode(id);return}
   }
@@ -1274,7 +1273,7 @@ load();initCloud();setInterval(()=>{renderHome();renderVideos();renderArtists();
   const now=Date.now();if(row.start_at&&new Date(row.start_at).getTime()>now)return;if(row.end_at&&new Date(row.end_at).getTime()<now)return;
   const img=row.image_url;if(!img)return;
   const internal=row.target_type==='internal',target=internal?row.target_value:row.target_url;
-  host.innerHTML='<a class="nova-live-ad" href="'+(internal?'#':esc(target||'#'))+'" '+(internal?'data-nova-ad-internal="'+esc(target)+'"':'target="_blank" rel="noopener noreferrer"')+' aria-label="'+esc(row.title||'تبلیغ')+'"><img src="'+esc(img)+'" alt="'+esc(row.title||'بنر تبلیغاتی')+'" loading="lazy"><span>'+esc(row.title||'')+'</span></a>';
+  host.querySelector('.nova-live-ad')?.remove();host.insertAdjacentHTML('beforeend','<a class="nova-live-ad" href="'+(internal?'#':esc(target||'#'))+'" '+(internal?'data-nova-ad-internal="'+esc(target)+'"':'target="_blank" rel="noopener noreferrer"')+' aria-label="'+esc(row.title||'تبلیغ')+'"><img src="'+esc(img)+'" alt="'+esc(row.title||'بنر تبلیغاتی')+'" loading="lazy" decoding="async"><span>'+esc(row.title||'')+'</span></a>');
   host.querySelector('[data-nova-ad-internal]')?.addEventListener('click',e=>{e.preventDefault();goInternal(e.currentTarget.dataset.novaAdInternal)});
  }
  (async()=>{
